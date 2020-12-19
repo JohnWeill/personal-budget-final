@@ -1,111 +1,105 @@
 // budget API
-const express = require('express');
-const 
-const cors = require('cors');
-const app = express();
-const port = 3000;
+// var mongoose = require("mongoose");
+// mongoose.Promise = global.Promise;
+// mongoose.connect("mongodb://localhost:27017/node-demo");
+if (process.env.NODE_ENV !== 'production'){
+    require('dotenv').config()
+}
 
-app.use(cors());
+const express = require('express')
+const app = express()
+const bcrypt = require('bcrypt')
+const passport = require('passport')
+const flash = require('express-flash')
+const session = require('express-session')
+const methodOverride = require('method-override')
 
-const budget = {
-    myBudget: [
-    {
-        title: 'Eat out',
-        budget: 30
-    },
-    {
-        title: 'Rent',
-        budget: 350
-    },
-    {
-        title: 'Groceries',
-        budget: 90
-    },
-    {
-        title: 'Games',
-        budget: 50
-    },
-    {
-        title: 'Gas',
-        budget: 10
-    },
-    {
-        title: 'Power',
-        budget: 15
-    },
-    {
-        title: 'Netflix',
-        budget: 9
-    },
-
-]
-};
+const initPassport = require('./passport-config')
+initPassport(
+    passport,
+    email => users.find(user => user.email === email),
+    id => users.find(user => user.id === id)
+)
 
 
-app.get('/budget', (req, res) => {
-    res.json(budget);
-});
 
-app.listen(port, () => {
-    console.log(`API served at http://localhost:${port}`)
-});
+// var nameSchema = new mongoose.Schema({
+//     firstName: String,
+//     lastNameName: String
+//   });
 
-let url = 'mongodb://localhost:3000/budget';
+//   var bodyParser = require('body-parser');
+//   app.use(bodyParser.json());
+//   app.use(bodyParser.urlencoded({ extended: true }));
 
-mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true})
-.then(()=>{
-    console.log("Connected to the database")
-    // list all entries
-   nameModel.find({})
-   .then((data)=>{
-       console.log(data)
-    })
-    .catch((connectionError) =>{
-       console.log(connectionError)
-    })
+const users = []
+
+app.set('view-engine', 'ejs')
+app.use(express.urlencoded({ extended: false}))
+app.use(flash())
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false
+}))
+app.use(passport.initialize())
+app.use(passport.session())
+app.use(methodOverride('_method'))
+
+
+app.get('/', checkAuthenticated, (req, res) => {
+    res.render('index.ejs', { name: req.user.name}) 
 })
-.catch((connectionError) => {
-   console.log(connectionError)
+
+app.get('/login', checkNotAuthenticated, (req, res) => {
+    res.render('login.ejs')
 })
-fetch
-nameModel.find({id: 2})
-    .then((data)=>{
-        console.log(data)
-    })
-    .catch((connectionError) =>{
-        console.log(connectionError)
-    })
-    nameModel.findById("5f9c9e28b035ae579b25e88a")
-    .then((data)=>{
-        console.log(data)
-        mongoose.connection.close()
-    })
-    .catch((connectionError) =>{
-        console.log(connectionError)
-    })
-    let newData = new namesModel({id: 10, name: "Testing mongoose"});
-    namesModel.insertMany(newData)
-    .then((data)=>{
-        console.log(data)
-        mongoose.connection.close()
-    })
-    .catch((connectionError) =>{
-        console.log(connectionError)
-    })
-    let newData = {id: 11, name: "updated content"};
-    namesModel.update({id: 10}, newData)
-    .then((data)=>{
-        console.log(data)
-        mongoose.connection.close()
-    })
-    .catch((connectionError) =>{
-        console.log(connectionError)
-    })
-    namesModel.remove({id: 10})
-    .then((data)=>{
-        console.log(data)
-        mongoose.connection.close()
-    })
-    .catch((connectionError) =>{
-        console.log(connectionError)
-    })
+
+app.post('/login', checkNotAuthenticated, passport.authenticate('local', {
+    successRedirect: '/',
+    failureRedirect: '/login',
+    failureFlash: true
+}))
+
+app.get('/register', checkNotAuthenticated, (req, res) => {
+    res.render('register.ejs')
+})
+
+app.post('/register', checkNotAuthenticated, async (req, res) => {
+    try {
+        const hashedPassword = await bcrypt.hash(req.body.password, 10)
+        users.push({
+            id: Date.now().toString(),
+            name: req.body.name,
+            email: req.body.email,
+            password: hashedPassword
+        })
+        res.redirect('/login')
+    } catch {
+        res.redirect('/register')
+    }
+    console.log(users)
+})
+
+app.delete('/logout', (req, res) => {
+    req.logOut()
+    res.redirect('/login')
+})
+
+function checkAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) {
+        return next()
+    }
+    res.redirect('/login')
+}
+
+function checkNotAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) {
+        return res.redirect('/')
+    }
+    next()
+}
+
+
+
+app.listen(3000)

@@ -4,6 +4,7 @@
   "description": "The path to NGInx main folder: /usr/share/nginx/html",
   "main": "server.js",
   "scripts": {
+    "devStart": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
@@ -19,7 +20,18 @@
   },
   "homepage": "https://github.com/JohnWeill/personal-budget#readme",
   "dependencies": {
+    "bcrypt": "^5.0.0",
     "cors": "^2.8.5",
-    "express": "^4.17.1"
+    "ejs": "^3.1.5",
+    "express": "^4.17.1",
+    "express-flash": "0.0.2",
+    "express-session": "^1.17.1",
+    "method-override": "^3.0.0",
+    "passport": "^0.4.1",
+    "passport-local": "^1.0.0"
+  },
+  "devDependencies": {
+    "dotenv": "^8.2.0",
+    "nodemon": "^2.0.6"
   }
 }
